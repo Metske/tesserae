@@ -62,6 +62,20 @@
         {"value": 60, "label": "1 minute"}
       ],
       "help": "How often to re-check for a new frame while staying awake. Ignored unless Stay awake is on. Unchanged content answers 304 without a panel refresh, so a short interval costs one small request rather than an e-paper repaint."
+    },
+    "scheduled_sync_local_hhmm": {
+      "type": "string",
+      "label": "Daily scheduled sync (HH:MM)",
+      "default": "06:00",
+      "help": "Local wall-clock time (HH:MM, 24-hour) for the daily offline-first Scheduled Sync window."
+    },
+    "passive_refresh_s": {
+      "type": "int",
+      "label": "Passive refresh interval (s)",
+      "default": 0,
+      "min": 0,
+      "max": 604800,
+      "help": "Seconds between radio-off passive rotations of cached Deck pages or Frame Collection frames. 0 disables passive refresh."
     }
   }
 }

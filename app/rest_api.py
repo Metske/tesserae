@@ -1850,9 +1850,12 @@ def post_status(device_id: str) -> Response:
             button_result = None
 
     next_poll_s, wake_at = _next_poll_decision(device)
+    status_cfg = _status_config(device)
     response = {
         "status": 200,
-        "config": _status_config(device),
+        "config": status_cfg,
+        "sync_policy": status_cfg.get("sync_policy")
+        or {"scheduled_sync_local_hhmm": "06:00", "passive_refresh_s": 0},
         "next_poll_s": next_poll_s,
         # Integer epoch, NOT a float: CircuitPython / MicroPython clients parse a
         # JSON float into a single-precision float32, whose resolution near 1.78e9
@@ -2746,8 +2749,15 @@ def get_bundle(device_id: str) -> Response:
     if deck is None or push_mgr is None or renders_dir is None:
         return _error(204, "no bundle for this device")
     from app.bundle_sync import build_bundle
+    from app.device_service import device_sync_policy
 
-    doc = build_bundle(deck, device.id, push_mgr=push_mgr, renders_dir=Path(renders_dir))
+    doc = build_bundle(
+        deck,
+        device.id,
+        push_mgr=push_mgr,
+        renders_dir=Path(renders_dir),
+        sync_policy=device_sync_policy(_current_config(device)),
+    )
     if doc is None:
         return _error(204, "no bundle for this device")
     return jsonify({"status": 200, **doc})

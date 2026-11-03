@@ -232,6 +232,32 @@ class InstanceResult:
         return self.error is None
 
 
+DEFAULT_SCHEDULED_SYNC_HHMM = "06:00"
+DEFAULT_PASSIVE_REFRESH_S = 0
+
+
+def device_sync_policy(config: dict[str, Any]) -> dict[str, Any]:
+    """Normalise a device's offline-first sync_policy block."""
+    raw_hhmm = config.get("scheduled_sync_local_hhmm")
+    hhmm = DEFAULT_SCHEDULED_SYNC_HHMM
+    if isinstance(raw_hhmm, str) and len(raw_hhmm.strip()) == 5 and raw_hhmm.strip()[2] == ":":
+        candidate = raw_hhmm.strip()
+        try:
+            hh, mm = int(candidate[:2]), int(candidate[3:])
+            if 0 <= hh <= 23 and 0 <= mm <= 59:
+                hhmm = f"{hh:02d}:{mm:02d}"
+        except ValueError:
+            pass
+    raw_passive = config.get("passive_refresh_s")
+    passive = DEFAULT_PASSIVE_REFRESH_S
+    if isinstance(raw_passive, int) and not isinstance(raw_passive, bool) and raw_passive >= 0:
+        passive = raw_passive
+    return {
+        "scheduled_sync_local_hhmm": hhmm,
+        "passive_refresh_s": passive,
+    }
+
+
 def device_config_doc(settings: Any, device: Device) -> dict[str, Any]:
     """Per-device config as it stands right now, context-free.
 
@@ -263,6 +289,9 @@ def device_config_doc(settings: Any, device: Device) -> dict[str, Any]:
     # reason: firmware reads one config block and shouldn't have to carry a
     # default for a field the server knows the answer to.
     out.setdefault("awake_poll_s", DEFAULT_AWAKE_POLL_S)
+    out.setdefault("scheduled_sync_local_hhmm", DEFAULT_SCHEDULED_SYNC_HHMM)
+    out.setdefault("passive_refresh_s", DEFAULT_PASSIVE_REFRESH_S)
+    out["sync_policy"] = device_sync_policy(out)
     _resolve_beep_pattern(out, device)
     return out
 

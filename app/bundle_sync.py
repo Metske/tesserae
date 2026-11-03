@@ -69,6 +69,7 @@ def build_bundle(
     *,
     push_mgr: Any,
     renders_dir: Path,
+    sync_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """The device's state bundle, or None when nothing is warmed yet.
     Only pages with a warmed per-device render become states (a cold
@@ -109,10 +110,15 @@ def build_bundle(
         sort_keys=True,
         separators=(",", ":"),
     )
+    policy = sync_policy or {
+        "scheduled_sync_local_hhmm": "06:00",
+        "passive_refresh_s": 0,
+    }
     return {
         "bundle_digest": hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:16],
         "states": states,
         "links": links,
+        "sync_policy": policy,
     }
 
 

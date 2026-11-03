@@ -243,4 +243,25 @@ def validate_config(payload: dict[str, Any]) -> tuple[bool, str | None]:
                 False,
                 f"awake_poll_s must be {AWAKE_POLL_MIN_S}..{AWAKE_POLL_MAX_S} (got {poll})",
             )
+    if "scheduled_sync_local_hhmm" in payload:
+        hhmm = payload["scheduled_sync_local_hhmm"]
+        if not isinstance(hhmm, str) or len(hhmm.strip()) != 5 or hhmm.strip()[2] != ":":
+            return False, "scheduled_sync_local_hhmm must be 'HH:MM'"
+        text = hhmm.strip()
+        try:
+            hh, mm = int(text[:2]), int(text[3:])
+        except ValueError:
+            return False, "scheduled_sync_local_hhmm must be 'HH:MM'"
+        if not (0 <= hh <= 23 and 0 <= mm <= 59):
+            return False, f"scheduled_sync_local_hhmm out of range (got {text!r})"
+    if "passive_refresh_s" in payload:
+        try:
+            passive = int(payload["passive_refresh_s"])
+        except (TypeError, ValueError):
+            return False, "passive_refresh_s must be an integer"
+        if passive < 0 or passive > SLEEP_INTERVAL_MAX_S:
+            return (
+                False,
+                f"passive_refresh_s must be 0..{SLEEP_INTERVAL_MAX_S} (got {passive})",
+            )
     return True, None
