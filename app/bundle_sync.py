@@ -89,10 +89,68 @@ def default_bundle_datasets(now_epoch: int | None = None) -> dict[str, Any]:
                 "icon": icon,
             }
         )
+
+    # Multi-day upcoming calendar events
+    events = [
+        {
+            "id": "evt_1",
+            "title": "Design Standup & Sprint Sync",
+            "start_epoch": base_hour + 1800,
+            "end_epoch": base_hour + 3600,
+            "date_str": "Today",
+            "time_str": "10:00 - 10:30",
+            "location": "Room 4B",
+            "all_day": False,
+        },
+        {
+            "id": "evt_2",
+            "title": "Firmware Architecture Review",
+            "start_epoch": base_hour + 7200,
+            "end_epoch": base_hour + 10800,
+            "date_str": "Today",
+            "time_str": "11:30 - 12:30",
+            "location": "Lab Bench 2",
+            "all_day": False,
+        },
+        {
+            "id": "evt_3",
+            "title": "Lunch with Hardware Team",
+            "start_epoch": base_hour + 14400,
+            "end_epoch": base_hour + 18000,
+            "date_str": "Today",
+            "time_str": "13:30 - 14:30",
+            "location": "Cafeteria",
+            "all_day": False,
+        },
+        {
+            "id": "evt_4",
+            "title": "IT8951 EPDC Tuning Workshop",
+            "start_epoch": base_hour + 86400 + 3600,
+            "end_epoch": base_hour + 86400 + 7200,
+            "date_str": "Tomorrow",
+            "time_str": "10:30 - 11:30",
+            "location": "Virtual",
+            "all_day": False,
+        },
+        {
+            "id": "evt_5",
+            "title": "Release Candidate Freeze",
+            "start_epoch": base_hour + 86400 * 2 + 18000,
+            "end_epoch": base_hour + 86400 * 2 + 21600,
+            "date_str": "In 2 days",
+            "time_str": "14:30 - 15:30",
+            "location": "Release Engineering",
+            "all_day": False,
+        },
+    ]
+
     return {
         "forecast": {
             "hourly": hourly,
-        }
+        },
+        "calendar": {
+            "upcoming": events,
+        },
     }
 
 

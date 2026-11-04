@@ -232,6 +232,8 @@ def _widget_for(el: Element, wire: WireFn | None) -> dict[str, Any] | None:
     if bindings is None:
         if kind == "status_strip":
             bindings = {"clock": True, "env": True, "battery": True, "weather": "forecast.hourly"}
+        elif kind == "agenda_list":
+            bindings = {"calendar": "calendar.upcoming"}
         else:
             bindings = {}
     base: dict[str, Any] = {
