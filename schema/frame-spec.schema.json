@@ -19,9 +19,25 @@
     "primitives": {
       "type": "array",
       "items": { "$ref": "#/$defs/primitive" }
+    },
+    "widgets": {
+      "type": "array",
+      "description": "Embedded FreeInkUI widget regions (status_strip, agenda_list, control_group).",
+      "items": { "$ref": "#/$defs/widget_region" }
     }
   },
   "$defs": {
+    "widget_region": {
+      "type": "object",
+      "required": ["id", "kind", "rect"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string", "enum": ["status_strip", "agenda_list", "control_group"] },
+        "rect": { "$ref": "#/$defs/rect" },
+        "bindings": { "type": "object" },
+        "options": { "type": "object" }
+      }
+    },
     "rect": {
       "type": "object",
       "required": ["x", "y", "w", "h"],

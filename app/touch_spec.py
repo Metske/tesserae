@@ -101,6 +101,7 @@ ATLAS_VALUE = "v28"
 # report both ask "is this element a primitive", and a third private copy of the
 # set is one more place for the answer to drift.
 PRIMITIVE_KINDS = frozenset({"button", "switch", "slider", "stepper"})
+WIDGET_KINDS = frozenset({"status_strip", "agenda_list", "control_group"})
 
 
 def classify_action(spec: str | dict[str, Any] | None) -> tuple[int, str]:
@@ -208,12 +209,54 @@ def _primitive_for(el: Element, wire: WireFn | None) -> dict[str, Any] | None:
     return base
 
 
-def touch_layout_digest(primitives: list[dict[str, Any]]) -> str:
-    """Stable 16-hex hash of the primitives' STRUCTURE (id, kind, rect, action,
+def _widget_for(el: Element, wire: WireFn | None) -> dict[str, Any] | None:
+    kind = None
+    if el.kind in WIDGET_KINDS:
+        kind = el.kind
+    elif el.kind == "widget" and getattr(el, "widget", "") in WIDGET_KINDS:
+        kind = el.widget
+    if kind is None:
+        return None
+    if el.x < 0 or el.y < 0 or el.w <= 0 or el.h <= 0:
+        return None
+    if wire is not None:
+        wired = wire(el.x, el.y, el.w, el.h)
+        if wired is None:
+            return None
+        rect = {"x": wired[0], "y": wired[1], "w": wired[2], "h": wired[3]}
+    else:
+        rect = {"x": int(el.x), "y": int(el.y), "w": int(el.w), "h": int(el.h)}
+
+    opts = getattr(el, "options", {}) or {}
+    bindings = opts.get("bindings")
+    if bindings is None:
+        if kind == "status_strip":
+            bindings = {"clock": True, "env": True, "battery": True, "weather": "forecast.hourly"}
+        else:
+            bindings = {}
+    base: dict[str, Any] = {
+        "id": el.id,
+        "kind": kind,
+        "rect": rect,
+        "bindings": bindings,
+    }
+    if opts:
+        base["options"] = opts
+    return base
+
+
+def touch_layout_digest(
+    primitives: list[dict[str, Any]], widgets: list[dict[str, Any]] | None = None
+) -> str:
+    """Stable 16-hex hash of the primitives' and widgets' STRUCTURE (id, kind, rect, action,
     binding, geometry), excluding seeded ``value``/``state`` so a switch flip or
     slider move is a data change, not a layout change. The device holds this and
     re-fetches the spec only when it changes."""
     structural = [{k: v for k, v in p.items() if k not in ("value", "state")} for p in primitives]
+    if widgets:
+        structural.extend(
+            [{k: v for k, v in w.items() if k not in ("value", "state")} for w in widgets]
+        )
     blob = json.dumps(structural, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
@@ -245,7 +288,7 @@ def build_frame_spec(
     Returns a doc conforming to ``schema/frame-spec.schema.json``. Pass ``wire``
     (from :func:`wire_transform`) to emit rects in device-framebuffer coordinates;
     without it, rects stay in canvas space (preview / tests). The ``layout_digest``
-    is derived from the primitive structure (stable across data-only redraws).
+    is derived from the primitive and widget structure (stable across data-only redraws).
     ``atlases`` is omitted here; the atlas pipeline attaches descriptors for the
     roles the primitives reference. Invalid primitives are skipped, and so are
     buttons when ``upright`` is False (see :func:`is_spec_primitive`)."""
@@ -254,4 +297,15 @@ def build_frame_spec(
         for p in (_primitive_for(el, wire) for el in els if upright or el.kind != "button")
         if p is not None
     ]
-    return {"layout_digest": touch_layout_digest(primitives), "primitives": primitives}
+    widgets = [
+        w
+        for w in (_widget_for(el, wire) for el in els)
+        if w is not None
+    ]
+    doc: dict[str, Any] = {
+        "layout_digest": touch_layout_digest(primitives, widgets=widgets),
+        "primitives": primitives,
+    }
+    if widgets:
+        doc["widgets"] = widgets
+    return doc

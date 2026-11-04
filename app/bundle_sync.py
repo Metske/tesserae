@@ -63,6 +63,39 @@ def _links_for(deck: Deck) -> dict[str, dict[str, str]]:
     return out
 
 
+def default_bundle_datasets(now_epoch: int | None = None) -> dict[str, Any]:
+    """Default multi-hour forecast and calendar datasets for the sync bundle."""
+    import time
+
+    if now_epoch is None:
+        now_epoch = int(time.time())
+    base_hour = (now_epoch // 3600) * 3600
+    conditions = [
+        ("Sunny", "sun", 21.0),
+        ("Partly Cloudy", "cloud-sun", 22.5),
+        ("Cloudy", "cloud", 20.0),
+        ("Light Rain", "cloud-rain", 18.0),
+        ("Clear", "moon", 16.5),
+        ("Sunny", "sun", 23.0),
+    ]
+    hourly = []
+    for i in range(24):
+        cond, icon, temp = conditions[i % len(conditions)]
+        hourly.append(
+            {
+                "epoch": base_hour + i * 3600,
+                "temp_c": temp + (i % 3) * 0.5,
+                "condition": cond,
+                "icon": icon,
+            }
+        )
+    return {
+        "forecast": {
+            "hourly": hourly,
+        }
+    }
+
+
 def build_bundle(
     deck: Deck,
     device_id: str,
@@ -70,6 +103,7 @@ def build_bundle(
     push_mgr: Any,
     renders_dir: Path,
     sync_policy: dict[str, Any] | None = None,
+    datasets: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """The device's state bundle, or None when nothing is warmed yet.
     Only pages with a warmed per-device render become states (a cold
@@ -114,11 +148,13 @@ def build_bundle(
         "scheduled_sync_local_hhmm": "06:00",
         "passive_refresh_s": 0,
     }
+    ds = datasets if datasets is not None else default_bundle_datasets()
     return {
         "bundle_digest": hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:16],
         "states": states,
         "links": links,
         "sync_policy": policy,
+        "datasets": ds,
     }
 
 
